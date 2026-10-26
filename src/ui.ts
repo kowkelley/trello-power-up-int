@@ -115,7 +115,8 @@ export async function mount(
   const viewActions = element('div', 'view-actions')
   const expandAll = button('Expand all', () => {
     if (!data) return
-    expanded = new Set(Object.values(data.parents))
+    const activeIds = new Set(data.cards.filter(card => !card.closed).map(card => card.id))
+    expanded = new Set(Object.values(data.parents).filter(id => activeIds.has(id)))
     void saveExpansion()
     renderTree()
   }, 'quiet')
