@@ -121,7 +121,7 @@ progress::-moz-progress-bar { background: #79a47c; border-radius: 3px; }
 .editor-dialog::backdrop { background: #162e2266; }
 .editor-form { display: flex; flex-direction: column; gap: 17px; }
 .editor-form h2 { font-family: 'Manrope', sans-serif; font-size: 20px; color: #284b35; letter-spacing: -.025em; }
-.dialog-fields { display: flex; flex-direction: column; gap: 15px; }
+.dialog-fields { display: flex; flex-direction: column; gap: 15px; margin: 0; padding: 0; border: 0; min-width: 0; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
 .dialog-error { color: #a13c30; font-size: 13px; overflow-wrap: anywhere; }
 .dialog-error:empty { display: none; }
