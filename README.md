@@ -1,6 +1,6 @@
 # Internal Trello Hierarchy
 
-A static TypeScript/Vite Power-Up for real, same-board Trello cards. No database,
+A static React/TypeScript/Vite Power-Up for real, same-board Trello cards. No database,
 paid backend, Custom Fields, webhooks, or background workers. The **Hierarchy**
 board button opens a fullscreen Trello modal with lists, nested expandable cards,
 search, status/label filters, and current card metadata. A parent card also has a
@@ -63,7 +63,38 @@ npm run preview
 
 There are no additional lint tools. `npm run build` performs TypeScript checking.
 Tests use Node's built-in runner and cover hierarchy integrity, storage budgets,
-rollups, stale metadata, authorization, and live adapter permission gates.
+rollups, stale metadata, authorization, live adapter permission gates, hierarchy
+filtering, and application state transitions.
+
+## Frontend structure
+
+The app uses React for rendering and Vite for development, Fast Refresh, and static
+production builds. Existing `?view=...` Power-Up URLs and `?demo=1` remain unchanged;
+no client-side router or server-side routing is needed.
+
+| Location | Responsibility |
+| --- | --- |
+| `src/main.tsx` | Bootstrap demo, connector, authorization, and live iframe views |
+| `src/app/App.tsx` | Compose the hierarchy screen and choose the active editor |
+| `src/layouts/` | Shared page layout, header, context, and footer |
+| `src/components/ui/` | Reusable accessible fields, empty states, and native modal dialog |
+| `src/features/hierarchy/` | Tree/cards, metadata, filters, notifications, pure selectors, state store, and lifecycle hook |
+| `src/features/relationships/` | Create, link, change-parent, and unlink editor |
+| `src/features/settings/` | Admin-only list/status rules editor |
+| `src/features/authorization/` | User-triggered Trello authorization screen |
+| `src/integrations/trello.ts` | SDK loading, capabilities, badges, and Power-Up URLs |
+| `src/adapter.ts` | Live Trello reads/writes and isolated in-memory demo adapter |
+| `src/model.ts` | Domain types, hierarchy validation, rollups, and storage guards |
+| `src/utils/` | Small shared non-UI helpers |
+| `src/style.css` | Existing responsive design tokens and component class styles |
+| `tests/` | Node test-runner coverage for domain, adapter, selectors, and state |
+
+Keep Trello access in the adapter, derived hierarchy logic in pure selectors, and
+async state transitions in the store. Components consume snapshots and callbacks
+rather than fetching data themselves. `useHierarchy` owns SDK-refresh listeners,
+visible-view polling, and cleanup. Add shared UI patterns to `components/ui` and
+feature-specific UI alongside its feature; avoid growing the bootstrap or page
+composition into another monolithic implementation.
 
 ## Account setup — actions you must perform
 
@@ -78,7 +109,7 @@ rollups, stale metadata, authorization, and live adapter permission gates.
    trigger if your default branch is different.
 3. After creating the Trello API key below, add the repository **Actions variable**
    `VITE_TRELLO_API_KEY`. Never supply a token or client secret. Re-run deployment
-   after changing it. No additional npm runtime dependency is necessary.
+   after changing it. `npm ci` installs the React runtime and build dependencies.
 4. Approve the `github-pages` environment deployment if your organization
    requires it. The workflow uses read-only checkout and grants Pages/OIDC
    permissions only to the deployment job.

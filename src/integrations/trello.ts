@@ -1,10 +1,5 @@
-import './style.css'
-import { configured, demoAdapter, liveAdapter } from './adapter'
-import type { Trello } from './adapter'
-import { mount } from './ui'
+import type { Trello } from '../adapter'
 
-const params = new URLSearchParams(location.search)
-const view = params.get('view')
 const base = new URL('./', location.href)
 function url(view: string, extras: Record<string, string> = {}) {
   const target = new URL('index.html', base)
@@ -12,7 +7,7 @@ function url(view: string, extras: Record<string, string> = {}) {
   return target.href
 }
 const appName = 'Internal Hierarchy'
-const restOptions = { appKey: import.meta.env.VITE_TRELLO_API_KEY, appName }
+export const restOptions = { appKey: import.meta.env.VITE_TRELLO_API_KEY, appName }
 let badgeCache: { board: string; expires: number; counts: Promise<Map<string, number>> } | undefined
 function childCounts(t: Trello): Promise<Map<string, number>> {
   const board = t.getContext().board
@@ -38,7 +33,7 @@ function modal(t: Trello, cardId?: string) {
     url: url(cardId ? 'card-modal' : 'board', cardId ? { card: cardId } : {}),
     fullscreen: true })
 }
-function connector() {
+export function initializeConnector() {
   const sdk = window.TrelloPowerUp
   if (!sdk) throw new Error('The official Trello SDK could not load. Check network access.')
   sdk.initialize({
@@ -62,9 +57,8 @@ function connector() {
     'show-authorization': (t: Trello) => t.popup({ title: 'Authorize Hierarchy', url: url('authorize'), height: 260 }),
     'show-settings': (t: Trello) => modal(t),
   }, restOptions)
-  document.querySelector('#app')!.textContent = 'Trello Hierarchy connector. Open ?demo=1 to preview without Trello.'
 }
-async function loadSdk() {
+export async function loadSdk() {
   if (window.TrelloPowerUp) return
   await new Promise<void>((resolve, reject) => {
     const script = document.createElement('script')
@@ -74,35 +68,3 @@ async function loadSdk() {
     document.head.append(script)
   })
 }
-async function start() {
-  if (params.get('demo') === '1' || !view) {
-    await mount(demoAdapter(), { demo: true })
-    return
-  }
-  await loadSdk()
-  if (view === 'connector') { connector(); return }
-  if (!configured) throw new Error('Missing public Trello API key. Configure VITE_TRELLO_API_KEY and redeploy.')
-  if (!window.TrelloPowerUp) throw new Error('Trello SDK unavailable.')
-  const t = window.TrelloPowerUp.iframe(restOptions)
-  const adapter = liveAdapter(t)
-  if (view === 'authorize') {
-    const button = document.createElement('button')
-    button.textContent = 'Authorize Trello read/write access'
-    button.onclick = () => { adapter.authorize().then(() => t.closePopup()).catch(showError) }
-    document.querySelector('#app')!.append(button)
-    return
-  }
-  const cardId = view === 'card' ? t.getContext().card : params.get('card') || undefined
-  await mount(adapter, { demo: false, cardId })
-  t.render(() => {
-    window.dispatchEvent(new Event('hierarchy-refresh'))
-    if (view === 'card') return t.sizeTo('#app').catch(() => {})
-  })
-}
-function showError(error: unknown) {
-  const message = document.createElement('p')
-  message.setAttribute('role', 'alert')
-  message.textContent = error instanceof Error ? error.message : 'Unable to load Hierarchy.'
-  document.querySelector('#app')!.append(message)
-}
-start().catch(showError)
